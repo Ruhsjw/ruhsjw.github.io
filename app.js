@@ -1,4 +1,4 @@
-let lang=0,filter='all',activeLayer=0;
+let lang=0;
 const pick=a=>a[lang];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const external=(label,url)=>`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)} ↗</a>`;
@@ -14,45 +14,38 @@ function projectPublication(p){
  if(!citation)return '';
  return `<aside class="project-publication" aria-label="${lang?'Project output: publication':'项目产出：论文'}"><div class="publication-heading"><h4>${lang?'Project output · Publication':'项目产出 · 论文'}</h4><span class="publication-status">${lang?'To appear':'待发表 · To appear'}</span></div><p class="citation">${citation.innerHTML}</p><a class="research-project-link" href="#research">${lang?'View publication details ↗':'查看论文栏目 ↗'}</a></aside>`;
 }
+function stackDetail(){
+ return `<section id="fullstack" class="stack-detail"><h4>${lang?'Full-stack implementation':'全栈实现'}</h4>${stackLayers.map(l=>`<article><h5>${esc(pick(l.label))} · ${esc(pick(l.title))}</h5><p>${esc(pick(l.text))}</p>${external(pick(l.evidence),codeBase+l.file)}</article>`).join('')}</section>`;
+}
+function projectThumb(p){return p.paperFigures?.results[0]?.src||p.videos?.[0]?.poster||p.images?.[0]?.src;}
 function renderProjects(){
  const opened=new Set([...document.querySelectorAll('.project[open]')].map(el=>el.dataset.index));
- const firstRender=!document.querySelector('.project');
- document.querySelector('#project-list').innerHTML=projects.map((p,i)=>`<details class="project" id="project-${i}" data-index="${i}" ${p.cat!==filter&&filter!=='all'?'hidden':''} ${opened.has(String(i))||(firstRender&&i===0)?'open':''}><summary><span class="project-num">${String(i+1).padStart(2,'0')}</span><div><h3>${esc(pick(p.title))}</h3><p class="description">${esc(pick(p.desc))}</p><div class="tags">${p.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${p.paperFigures?`<span class="tag media-tag">▧ 7 ${lang?'paper figures':'张论文图'}</span>`:''}${p.videos?`<span class="tag media-tag">▶ ${p.videos.length} ${lang?'videos':'段视频'}</span>`:''}${p.images?`<span class="tag media-tag">▧ ${p.images.length} ${lang?'images':'张图片'}</span>`:''}</div></div><span class="project-date">${p.date}</span><span class="expand" aria-hidden="true">+</span></summary><div class="project-body">${p.pipeline?`<div class="pipeline" aria-label="${lang?'System pipeline':'系统流程'}">${p.pipeline.map(t=>`<span>${esc(t)}</span>`).join('<b aria-hidden="true">→</b>')}</div>`:''}<ul>${p.bullets.map(b=>`<li>${esc(pick(b))}</li>`).join('')}</ul>${p.videos?`<div class="video-grid">${p.videos.map(videoCard).join('')}</div>`:''}${p.images?`<div class="image-grid">${p.images.map(imageCard).join('')}</div>`:''}${paperGallery(p)}${p.links?`<div class="project-links">${p.links.map(l=>external(l[0],l[1])).join('')}</div>`:''}${p.note?`<p class="project-note">${esc(pick(p.note))}</p>`:''}${projectPublication(p)}</div></details>`).join('');
- const n=projects.filter(p=>filter==='all'||p.cat===filter).length;
- document.querySelector('#project-count').textContent=lang?`${n} projects`:`${n} 个项目`;
-}
-function renderStack(){
- document.querySelector('#stack-tabs').innerHTML=stackLayers.map((l,i)=>`<button role="tab" id="stack-tab-${i}" aria-selected="${i===activeLayer}" aria-controls="stack-panel" tabindex="${i===activeLayer?0:-1}" data-layer="${i}">${esc(pick(l.label))}<span aria-hidden="true">↗</span></button>`).join('');
- const layer=stackLayers[activeLayer];
- const panel=document.querySelector('#stack-panel');
- panel.setAttribute('aria-labelledby',`stack-tab-${activeLayer}`);
- panel.innerHTML=`<div class="eyebrow">LAYER ${String(activeLayer+1).padStart(2,'0')} / 04</div><h3>${esc(pick(layer.title))}</h3><p>${esc(pick(layer.text))}</p><div class="tags">${layer.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div><div class="code-evidence">${external(pick(layer.evidence),codeBase+layer.file)}<code>${layer.file}</code></div>`;
-}
-function renderShowcase(){
- const cards=[{project:0,image:'media/paper-fig1-dual-box.webp',label:['WHOLE-BODY TRACKING / 仿真与论文','WHOLE-BODY TRACKING / SIMULATION & PAPER'],title:['全身运动跟踪与协作搬运','Whole-body tracking & collaborative carrying'],text:['从单机物体交互到双机共享策略搬运，查看论文图集与训练分析。','From single-humanoid object interaction to shared-policy dual-humanoid carrying. Explore paper figures and training analysis.']},{project:7,image:'media/mecanum-robot.jpg',label:['FULL STACK / 实机系统','FULL STACK / HARDWARE'],title:['Web 控制台 × 自主机器人','Web console × autonomous robot'],text:['从浏览器命令到电机反馈，贯穿完整软硬件链路。','From browser commands to motor feedback across the software–hardware stack.']},{project:1,image:'media/g1-navigation.webp',label:['HUMANOID / 视频演示','HUMANOID / VIDEO DEMOS'],title:['G1 自主导航与交互','G1 autonomy & interaction'],text:['查看自主避障、强化学习步态和视觉任务。','Explore autonomous avoidance, RL locomotion, and vision-based tasks.']},{project:8,image:'media/arm-hardware.jpg',label:['MANIPULATION / 仿真与实机','MANIPULATION / SIMULATION & HARDWARE'],title:['视觉引导静态小车抓取','Vision-guided stationary-car grasping'],text:['从视觉检测、三维定位到机械臂执行，在 Gazebo 仿真与 KUKA 实机上均完成静态小车抓取。','From visual detection and 3D localization to arm execution, with stationary-car grasps completed in Gazebo and on KUKA hardware.']}];
- document.querySelector('#showcase').innerHTML=cards.map(c=>`<a class="showcase-card" href="#project-${c.project}" data-project="${c.project}"><img src="${c.image}" alt="${esc(pick(c.title))}" loading="lazy"><div><span class="eyebrow">${esc(pick(c.label))}</span><h3>${esc(pick(c.title))} <span>↗</span></h3><p>${esc(pick(c.text))}</p></div></a>`).join('');
+ document.querySelector('#project-list').innerHTML=projects.map((p,i)=>`<details class="project" id="project-${i}" data-index="${i}" ${opened.has(String(i))?'open':''}><summary><div class="project-summary"><div class="project-meta"><span>${esc(pick({robotics:['机器人','Robotics'],ai:['AI 与感知','AI & perception'],engineering:['工程与仿真','Engineering']}[p.cat]))}</span><span>${esc(p.date)}</span></div><h3>${esc(pick(p.title))}</h3><p class="description">${esc(pick(p.desc))}</p><span class="detail-label"><span class="closed-label">${lang?'View project':'查看项目'}</span><span class="open-label">${lang?'Close details':'收起详情'}</span> <span class="expand" aria-hidden="true">↓</span></span></div>${projectThumb(p)?`<img class="project-thumb" src="${projectThumb(p)}" alt="" loading="lazy">`:''}</summary><div class="project-body"><div class="tags">${p.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>${p.pipeline?`<p class="pipeline" aria-label="${lang?'System pipeline':'系统流程'}">${p.pipeline.map(t=>esc(t)).join(' → ')}</p>`:''}<ul>${p.bullets.map(b=>`<li>${esc(pick(b))}</li>`).join('')}</ul>${p.videos?`<div class="video-grid">${p.videos.map(videoCard).join('')}</div>`:''}${p.images?`<div class="image-grid">${p.images.map(imageCard).join('')}</div>`:''}${paperGallery(p)}${i===7?stackDetail():''}${p.links?`<div class="project-links">${p.links.map(l=>external(l[0],l[1])).join('')}</div>`:''}${p.note?`<p class="project-note">${esc(pick(p.note))}</p>`:''}${projectPublication(p)}</div></details>`).join('');
 }
 function render(){
  document.documentElement.lang=lang?'en':'zh-CN';
  document.querySelectorAll('[data-zh]').forEach(el=>el.textContent=el.dataset[lang?'en':'zh']);
  document.querySelector('#language').innerHTML=lang?'中文 <span>↗</span>':'EN <span>↗</span>';
  document.querySelector('#language').setAttribute('aria-label',lang?'切换到中文':'Switch to English');
- renderProjects();renderStack();renderShowcase();
+ renderProjects();
  document.querySelector('#experience-list').innerHTML=experience.map(e=>`<article class="timeline-item"><div class="meta">${esc(Array.isArray(e.date)?pick(e.date):e.date)}</div><h3>${esc(pick(e.role))}</h3><div class="org">${esc(e.org)}</div><p>${esc(pick(e.text))}</p></article>`).join('');
  document.querySelector('#education-list').innerHTML=education.map(e=>`<article class="education-item"><div class="meta">${e.date}</div><div><h3>${esc(pick(e.school))}</h3><p class="degree">${esc(pick(e.degree))}</p><p>${esc(pick(e.detail))}</p></div></article>`).join('');
 }
 document.querySelector('#language').addEventListener('click',()=>{lang=1-lang;render();});
-function setFilter(value){filter=value;document.querySelectorAll('[data-filter]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.filter===filter)));renderProjects();}
-document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>setFilter(b.dataset.filter)));
 document.addEventListener('click',e=>{
- const layer=e.target.closest('[data-layer]');if(layer){activeLayer=Number(layer.dataset.layer);renderStack();document.querySelector(`#stack-tab-${activeLayer}`).focus();return;}
- const project=e.target.closest('[data-project]');if(project){e.preventDefault();setFilter('all');const el=document.querySelector(`#project-${project.dataset.project}`);el.open=true;el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth',block:'start'});history.replaceState(null,'',`#project-${project.dataset.project}`);return;}
+ const project=e.target.closest('[data-project]');if(project){e.preventDefault();history.pushState(null,'',`#project-${project.dataset.project}`);openHash();return;}
  const image=e.target.closest('.zoom-image');if(image){const im=document.querySelector('#media-image');im.src=image.dataset.src;im.alt=image.dataset.caption;document.querySelector('#media-caption').textContent=image.dataset.caption;document.querySelector('#media-dialog').showModal();return;}
  const video=e.target.closest('[data-video]');if(video){const frame=document.createElement('iframe');frame.src=`https://drive.google.com/file/d/${video.dataset.video}/preview`;frame.title=video.dataset.title;frame.allow='autoplay; fullscreen; picture-in-picture';frame.allowFullscreen=true;video.parentElement.replaceChildren(frame);}
 });
-document.querySelector('#stack-tabs').addEventListener('keydown',e=>{if(!['ArrowDown','ArrowUp','ArrowRight','ArrowLeft','Home','End'].includes(e.key))return;e.preventDefault();activeLayer=e.key==='Home'?0:e.key==='End'?3:(activeLayer+(['ArrowDown','ArrowRight'].includes(e.key)?1:3))%4;renderStack();document.querySelector(`#stack-tab-${activeLayer}`).focus();});
 const dialog=document.querySelector('#media-dialog');
 document.querySelector('#close-media').addEventListener('click',()=>dialog.close());
 dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
 render();
-if(/^#project-\d+$/.test(location.hash)){const target=document.querySelector(location.hash);if(target){target.open=true;requestAnimationFrame(()=>target.scrollIntoView());}}
+function openHash(){
+ const hash=location.hash;
+ if(!/^#project-\d+$/.test(hash)&&hash!=='#fullstack')return;
+ const target=document.querySelector(hash==='#fullstack'?'#project-7':hash);
+ if(target){target.open=true;requestAnimationFrame(()=>document.querySelector(hash).scrollIntoView({block:'start'}));}
+}
+window.addEventListener('hashchange',openHash);
+openHash();
